@@ -2,6 +2,7 @@ package br.com.etechoracio.boa_viagem.controller;
 
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,47 +16,55 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.etechoracio.boa_viagem.entity.Viagem;
-import br.com.etechoracio.boa_viagem.repository.ViagemRepository;
+import br.com.etechoracio.boa_viagem.service.ViagemService;
 
 @RestController
 @RequestMapping("/viagem")
 public class ViagemController {
 	@Autowired
-	private ViagemRepository repository;
+	private ViagemService service;
 	
 	@GetMapping
 	public List<Viagem> listarTodos()
 	{
-		return repository.findAll();
+		return service.listarTodos();
 
 	}
 	//fazendo metodo de requisição da tabela gasto por id
 	@GetMapping("/{id}")
-	public Viagem buscarPorID(@PathVariable Long id) 
+	public ResponseEntity<Viagem> buscarPorID(@PathVariable Long id) 
 	{
-		return repository.findById(id).orElse(null);
+		Optional<Viagem> existe = service.buscarPorID(id);
+		if (existe.isPresent())
+			return ResponseEntity.ok(existe.get());
+		
+		return ResponseEntity.notFound().build();
 	}
 	//metodo para deletar 
 	@DeleteMapping("/{id}")
-	public void deletarPorID(@PathVariable Long id) 
+	public ResponseEntity<Object> deletarPorID(@PathVariable Long id) 
 	{
-		repository.findById(id);
+		boolean existe = service.deletarPorID(id);
+		if(existe) {
+			return ResponseEntity.ok().build();		
+		}
+		return ResponseEntity.notFound().build();
 	}
 	//metodo para postar alterações na tabela
 	@PostMapping("/{id}")
 	public ResponseEntity<Viagem> inserir(@RequestBody Viagem obj){
-		repository.save(obj);
+		service.inserir(obj);
 		return ResponseEntity.ok(obj);
 	}
+	
 	//metodo para inserir alterações a1
 	@PutMapping("/{id}")
 	public ResponseEntity<Viagem> atualizar (@PathVariable Long id, @RequestBody Viagem viagem) {
-		boolean existe = repository.existsById(id);
-		if (existe) {
+		Optional<Viagem> existe = service.atualizar(id, viagem);
+		if (!existe.isPresent()) {
 			return ResponseEntity.notFound().build();
 		}
-		
-		repository.save(viagem);
+	
 		return ResponseEntity.ok(viagem);
 	}
 }

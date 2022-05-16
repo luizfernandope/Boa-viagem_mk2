@@ -12,48 +12,58 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.etechoracio.boa_viagem.entity.Gasto;
-import br.com.etechoracio.boa_viagem.repository.GastoRepository;
+import br.com.etechoracio.boa_viagem.service.GastoService;
+
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/gastos")
 public class GastoController {
 	@Autowired
-	private GastoRepository repository;
+	private GastoService service;
 	
 	@GetMapping
 	public List<Gasto> listarTodos()
 	{
-		return repository.findAll();
+		return service.listarTodos();
 
 	}
 	//fazendo metodo de requisição da tabela gasto por id
 	@GetMapping("/{id}")
-	public Gasto buscarPorID(@PathVariable Long id) 
+	public ResponseEntity<Gasto> buscarPorID(@PathVariable Long id) 
 	{
-		return repository.findById(id).orElse(null);
+		Optional<Gasto> existe = service.buscarPorID(id);
+		if (existe.isPresent())
+			return ResponseEntity.ok(existe.get());
+		
+		return ResponseEntity.notFound().build();
 	}
+	
 	//metodo para deletar 
 	@DeleteMapping("/{id}")
-	public void deletarPorID(@PathVariable Long id) 
+	public ResponseEntity<Object> deletarPorID(@PathVariable Long id) 
 	{
-		repository.findById(id);
+		boolean existe = service.deletarPorID(id);
+		if(existe) {
+			return ResponseEntity.ok().build();		
+		}
+		return ResponseEntity.notFound().build();
 	}
 	//metodo para postar alterações na tabela
 	@PostMapping("/{id}")
 	public ResponseEntity<Gasto> inserir(@RequestBody Gasto obj){
-		repository.save(obj);
+		service.inserir(obj);
 		return ResponseEntity.ok(obj);
 	}
 	//metodo para inserir alterações
 	@PutMapping("/{id}")
 	public ResponseEntity<Gasto> atualizar (@PathVariable Long id, @RequestBody Gasto gasto) {
-		boolean existe = repository.existsById(id);
-		if (existe) {
+		Optional<Gasto> existe = service.atualizar(id, gasto);
+		if (!existe.isPresent()) {
 			return ResponseEntity.notFound().build();
 		}
 		
-		repository.save(gasto);
 		return ResponseEntity.ok(gasto);
 	}
 }
